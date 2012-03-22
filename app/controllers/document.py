@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from app.utils.misc import template_response, local, sqlitedb, xapdb, redirect
+from app.utils.misc import runtemplate, sqlitedb, xapdb, redirect
 from app.controllers.error import notfound
 
 import json
@@ -9,6 +9,7 @@ import logging
 log = logging.getLogger(__name__)
 
 def newdoc():
+    log.debug("Yo")
     template_response("/page/creator.mako")
 
 def newdoc_do():

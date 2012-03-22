@@ -27,18 +27,18 @@ endpts = {
 url_map = werkzeug.routing.Map()
 
 for method, path, endpoint in [
+        ("DELETE", "/sys/note/<string:id_>", "docdelete"),
         ("GET", "/", "index"),
         ("GET", "/note/<string:id_>", "docedit"),
-        ("POST", "/note/<string:id_>", "doceditdo"),
         ("GET", "/create", "docnewdoc"),
-        ("POST", "/create", "docnewdocdo"),
-        ("POST", "/sys/create", "doccreate"),
         ("GET", "/sys/latest", "doclatest"),
         ("GET", "/sys/search", "docsearch"),
         ("GET", "/sys/note/<string:id_>", "docget"),
-        ("PUT", "/sys/note/<string:id_>", "docupdate"),
         ("GET", "/sys/note/<string:id_>", "docget"),
-        ("DELETE", "/sys/note/<string:id_>", "docdelete"),
+        ("POST", "/note/<string:id_>", "doceditdo"),
+        ("POST", "/create", "docnewdocdo"),
+        ("POST", "/sys/create", "doccreate"),
+        ("PUT", "/sys/note/<string:id_>", "docupdate"),
     ]:
     rule = werkzeug.routing.Rule(path, methods=[method], endpoint=endpoint)
     url_map.add(rule)
