@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
-import werkzeug
-from app.utils.misc import runtemplate
+from app.utils.misc import templateresponse
 
-def error(request):
-    response = werkzeug.Response()
-    runtemplate(response, "/error/servererror.mako")
-    return response
+def error(**kwargs):
+    return templateresponse("/error/servererror.mako")
 
-def notfound(request):
-    response = werkzeug.Response()
-    runtemplate(response, "/error/notfound.mako")
-    return response
+def notfound(**kwargs):
+    return templateresponse("/error/notfound.mako")
 
-def notyet(request):
-    response = werkzeug.Response()
-    runtemplate(response, "/error/notyet.mako")
-    return response
-
+def notyet(**kwargs):
+    return templateresponse("/error/notyet.mako")

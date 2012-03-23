@@ -1,44 +1,25 @@
 # -*- coding: utf-8 -*-
-import werkzeug.routing
+from werkzeug.routing import Map, Rule
+import logging
 
-import app.controllers.index
-import app.controllers.document
-import app.controllers.error
+from functools import wraps
 
-endpts = {
-# Normal endpoints
-    "index": app.controllers.index.index,
-    "docget": app.controllers.document.get,
-    "doccreate": app.controllers.document.create,
-    "docnewdoc": app.controllers.document.newdoc,
-    "docnewdocdo": app.controllers.document.newdoc_do,
-    "docupdate": app.controllers.document.update,
-    "docsearch": app.controllers.document.search,
-    "doclatest": app.controllers.document.latest,
-    "docdelete": app.controllers.document.delete,
-    "docedit": app.controllers.document.edit,
-    "doceditdo": app.controllers.document.edit_do,
+log = logging.getLogger(__name__)
 
-# System endpoints
-    "notfound": app.controllers.error.notfound,
-    "error": app.controllers.error.error,
-}
+url_map = Map()
+endpts = {}
 
-url_map = werkzeug.routing.Map()
 
-for method, path, endpoint in [
-        ("DELETE", "/sys/note/<string:id_>", "docdelete"),
-        ("GET", "/", "index"),
-        ("GET", "/note/<string:id_>", "docedit"),
-        ("GET", "/create", "docnewdoc"),
-        ("GET", "/sys/latest", "doclatest"),
-        ("GET", "/sys/search", "docsearch"),
-        ("GET", "/sys/note/<string:id_>", "docget"),
-        ("GET", "/sys/note/<string:id_>", "docget"),
-        ("POST", "/note/<string:id_>", "doceditdo"),
-        ("POST", "/create", "docnewdocdo"),
-        ("POST", "/sys/create", "doccreate"),
-        ("PUT", "/sys/note/<string:id_>", "docupdate"),
-    ]:
-    rule = werkzeug.routing.Rule(path, methods=[method], endpoint=endpoint)
-    url_map.add(rule)
+def mapto(method, path):
+    def decorator(f):
+        module = f.__module__.split(".")[-1]
+        endpoint = "{}.{}".format(module, f.__name__)
+        endpts[endpoint] = f
+        url_map.add(Rule(path, methods=[method], endpoint=endpoint))
+        return f
+    return decorator
+
+_rel_adapter = url_map.bind("", "/")
+def urlfor(endpoint, method=None, _external=False, **values):
+    return _rel_adapter.build(endpoint, values, method=method, force_external=_external)
+

@@ -6,7 +6,7 @@
     <script language="javascript" type="text/javascript" src="/static/js/editor.js"></script>
 </head>
 <body>
-<form id="editform" action=${escattr(urlfor("doceditdo",id_=id_))} method="POST">
+<form id="editform" action=${escattr(urlfor("document.edit_do",id_=id_))} method="POST">
     <div id="actionbar">
         <input type="submit" name="action" value="Save" tabindex="2">
         <input type="submit" id="deletebutton" name="action" value="Delete" tabindex="3">

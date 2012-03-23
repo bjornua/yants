@@ -6,7 +6,7 @@
     <script language="javascript" type="text/javascript" src="/static/js/editor.js"></script>
 </head>
 <body>
-<form action=${escattr(urlfor("docnewdocdo"))} method="POST">
+<form action=${escattr(urlfor("document.create_do"))} method="POST">
     <div id="actionbar">
         <input type="submit" value="Save" tabindex="2">
     </div>
