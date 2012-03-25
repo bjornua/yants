@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 import env
 
+env.setup()
+
 from werkzeug import run_simple
 from app.wsgiapp import Main
 

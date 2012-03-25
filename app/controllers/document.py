@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-from app.utils.db import sqlitedb, xapdb
-from app.utils.misc import templateresponse, jsonresponse, redirect
-from app.controllers.error import notfound
-
 import logging
 
+from app.controllers.error import notfound
+from app.db import sqlitedb, xapdb
+from app.helpers import templateresponse, jsonresponse, redirect
 from app.mapping import mapto
+
 import app.model.document as document
 
 log = logging.getLogger(__name__)

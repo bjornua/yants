@@ -1,12 +1,14 @@
 #!/usr/bin/python2 -B
 # -*- coding: utf-8 -*-
 import env
+
+env.setup()
+
 import time
 import wsgiserver
+from threading import Thread
 
 from app.wsgiapp import Main
-
-from threading import Thread
 
 def main():
     webapp = Main(debug=False)

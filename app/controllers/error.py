@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from app.utils.misc import templateresponse
+from app.helpers import templateresponse
 
 def error(**kwargs):
     return templateresponse("/error/servererror.mako")

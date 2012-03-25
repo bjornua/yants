@@ -5,7 +5,6 @@ log = logging.getLogger(__name__)
 from werkzeug import Request, Response, SharedDataMiddleware
 from werkzeug.exceptions import NotFound
 
-
 def Main(debug):
     dispatch = AppMiddleware(None, debug)
     dispatch = SharedDataMiddleware(dispatch, {"/static": "static"})
@@ -20,8 +19,8 @@ def ErrorMiddleware(target, debug):
         except: 
             if debug:
                 raise
-            log.exception("Exception")
-            return Response("Fejlsidens fejlside.")(environ, start_response)
+            log.exception("WSGI Handler exception")
+            return Response("Error.")(environ, start_response)
 
     return dispatch
 

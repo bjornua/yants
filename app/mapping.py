@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 url_map = Map()
 endpts = {}
 
-
 def mapto(method, path):
     def decorator(f):
         module = f.__module__.split(".")[-1]
@@ -19,7 +18,6 @@ def mapto(method, path):
         return f
     return decorator
 
-_rel_adapter = url_map.bind("", "/")
+_static_adapter = url_map.bind("", "/")
 def urlfor(endpoint, method=None, _external=False, **values):
-    return _rel_adapter.build(endpoint, values, method=method, force_external=_external)
-
+    return _static_adapter.build(endpoint, values, method=method, force_external=_external)

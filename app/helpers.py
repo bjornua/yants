@@ -3,7 +3,7 @@ import werkzeug
 import werkzeug.utils
 import json
 
-from app.utils.template import runtemplate
+from app.template import runtemplate
 from app.mapping import urlfor
 
 def templateresponse(templatename, **kwargs):
