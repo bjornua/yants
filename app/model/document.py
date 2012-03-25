@@ -145,7 +145,8 @@ def delete(db, xapdb, id_):
             "seq_id" = ?,
             "mtime" = ?,
             "content" = NULL,
-            "deleted" = 1
+            "deleted" = 1,
+            "xapian_id" = NULL
         WHERE "id" = ? and "deleted" = 0
     '''
     if db.execute(sql, (peerid, seqid, mtime, id_)).rowcount > 0:
