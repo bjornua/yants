@@ -1,62 +1,96 @@
 # -*- coding: utf-8 -*-
-from app.utils.misc import db
+import random
+from datetime import datetime, timedelta
+
 import app.utils.date as dateutils
 
-class InvalidCookie(Exception): pass
+import logging
+
+log = logging.getLogger(__name__)
+
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+def generate_token():
+    return "".join(random.choice(alphabet) for _ in range(64))
+
+# Formats timestamp for use in database (assumes all dates are UTC)
+def timestamp(date):
+    return date.replace(microsecond=0).isoformat() + "Z"
 
 class Session(object):
-    def __init__(self, id_, expires):
-        self.id = id_
-        self.is_init = False
-        self.expires = expires
-    
-    def init(self):
-        if self.is_init:
+    def __init__(self, db, id_, token, ttl=600):
+        self.db = db
+        
+        if id_ is None or token is None or not verify_session(db, id_, token, ttl):
+            self.id = None
+            self.token = None
             return
-        self.is_init = True
-
-        self.date = dateutils.now()
-        if self.id != None:
-            try:
-                self.load_session()
-                return
-            except InvalidCookie:
-                pass
-        self.new_session()
-    
-    def get_doc(self, id_):
-        for result in db().view("session/by_id", key=id_, include_docs=True):
-            return result["doc"]
-
-    def load_session(self):
-        doc = self.get_doc(self.id)
-
-        if doc is None:
-            raise InvalidCookie()
-
-        # Expire time on session
-        if (dateutils.now() - dateutils.fromtuple(doc["date"])).total_seconds() > self.expires:
-            raise InvalidCookie()
         
-        doc["date"] = dateutils.totuple(self.date)
-        self.doc = doc
-        
-    def new_session(self):
-        self.doc = {"type": "session", "data":{}, "date": dateutils.totuple(self.date)}
+        self.id = id_
+        self.token = token
+
+        touch_session(self.id) 
+
+    def get(self, key, default=None):
+        if self.id is None:
+            log.debug("Returning default %s", repr(default))
+            return default
+
+        data = session_get(self.db, self.id, key)
+        if data is None:
+            return default
+
+        return data
+
+    def set(self, key, value):
+        if self.id is None:
+            self.token = generate_token()
+            self.id = create_session(self.db, self.token)
+
+        session_set(self.db, self.id, key, value)
+
+def verify_session(db, id_, token, ttl):
+    sql = 'SELECT "token","last_touch" FROM "sessions" WHERE "id" = ?'
+    row = db.execute(sql, (id_,)).fetchone()
     
-    def save(self):
-        if self.is_init:
-            db().save_doc(self.doc)
-            self.id = self.doc["_id"]
+    if row is None:
+        return False
     
-    def get(self, *args, **kwargs):
-        self.init()
-        return self.doc["data"].get(*args,**kwargs)
+    expirydate = timestamp(datetime.utcnow() - timedelta(seconds=ttl))
+    dbtoken, last_touch = row
     
-    def __setitem__(self, *args, **kwargs):
-        self.init()
-        return self.doc["data"].__setitem__(*args,**kwargs)
+    if token != dbtoken:
+        return False
     
-    def set_cookie(self, response):
-        if self.is_init:
-            response.set_cookie("session", self.id, max_age=31536000)
+    if last_touch < expirydate:
+        return False
+
+    return True
+
+def create_session(db, token):
+    now = timestamp(datetime.utcnow())
+    sql = 'INSERT INTO "sessions"("token", "last_touch") VALUES(?,?)'
+    return db.execute(sql, (token,now)).lastrowid
+
+def update_time(db, id):
+    now = timestamp(datetime.utcnow())
+    sql = 'UPDATE "sessions" SET "last_touch" = ? WHERE "id" = ?'
+    db.execute(sql, (now, id_))
+
+def session_cleanup(db, ttl):
+    expirydate = timestamp(datetime.utcnow() - timedelta(seconds=ttl))
+    sql = 'DELETE FROM "sessions" WHERE "last_touch" < ?'
+    db.execute(sql, (expirydate,))
+
+def session_get(db, id_, key):
+    log.debug("Calling session_get with %s %s %s", repr(db), repr(id_), repr(key))
+    sql = 'SELECT "value" FROM "session_data" WHERE "session_id" = ? AND "key" = ?'
+    for value, in db.execute(sql, (id_, key)):
+        return value
+
+def session_set(db, id_, key, value):
+    sql = 'UPDATE "session_data" SET "value" = ? WHERE "session_id" = ? AND "key" = ?'
+    if db.execute(sql, (value, id_, key)).rowcount >= 1:
+        return
+
+    sql = 'INSERT INTO "session_data"("session_id","key","value") VALUES(?,?,?)'
+    db.execute(sql, (id_, key, value))

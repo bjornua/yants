@@ -6,8 +6,23 @@ import sqlite3
 import threading
 import xapian
 
+sessiondb_initsql = """
+    CREATE TABLE "sessions"(
+        "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "last_touch" INTEGER,
+        "token" TEXT
+    );
+    CREATE TABLE "session_data"(
+        "session_id" INTEGER,
+        "key" TEXT,
+        "value" TEXT
+    );
+    CREATE UNIQUE INDEX "idx_datalookup" ON "session_data" ("session_id" ASC, "key" ASC);
 
-createsql = """
+
+"""
+
+notedb_initsql = """
     CREATE TABLE "document"(
         "id" TEXT,
         "peer_id" TEXT,
@@ -32,7 +47,24 @@ def preparedatadir():
     if not path.isdir("data"):
         os.mkdir("data")
 
-def sqlitedb_lazy():
+def sessiondb_lazy():
+    db = [None]
+    def getter():
+        if db[0] is None:
+            preparedatadir()
+            new = not path.exists("data/session")
+            db[0] = sqlite3.connect("data/session", check_same_thread=False)
+            db[0].execute("PRAGMA synchronous=OFF")
+            db[0].execute("PRAGMA journal_mode=OFF")
+            db[0].isolation_level = None
+            if new:
+                db[0].executescript(sessiondb_initsql)
+        return db[0]
+    return getter
+
+sessiondb = sessiondb_lazy()
+
+def notedb_lazy():
     db = [None]
     def getter():
         if db[0] is None:
@@ -43,11 +75,11 @@ def sqlitedb_lazy():
             db[0].execute("PRAGMA journal_mode=OFF")
             db[0].isolation_level = None
             if new:
-                db[0].executescript(createsql)
+                db[0].executescript(notedb_initsql)
         return db[0]
     return getter
 
-sqlitedb = sqlitedb_lazy()
+notedb = notedb_lazy()
 
 def xapdb_lazy():
     db = [None]
