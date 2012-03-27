@@ -30,14 +30,34 @@ def AppMiddleware(target, debug):
         import app.controllers.document
         from app.controllers.error import notfound, error
         from app.mapping import url_map, endpts
-        url_adapter = url_map.bind_to_environ(request.environ)
-        
+        from app.utils.session import Session
+        from app.db import sessiondb
+
         try:
+            url_adapter = url_map.bind_to_environ(request.environ)
+
+            session_id = request.cookies.get("session_id")
+            if session_id is not None:
+                try:
+                    session_id = int(session_id)
+                except ValueError:
+                    session_id = None
+
+            session_token = request.cookies.get("session_token")
+            session = Session(sessiondb, session_id, session_token, ttl=60)
+
             try:
                 endpt, params = url_adapter.match()
-                return endpts[endpt](request=request, url_adapter=url_adapter, **params)
+                response = endpts[endpt](request=request, url_adapter=url_adapter, session=session, **params)
             except NotFound:
-                return notfound(request=request, url_adapter=url_adapter)
+                response = notfound(request=request, url_adapter=url_adapter)
+            
+            if session.token is None or session.id is None:
+                return response
+
+            response.set_cookie("session_id", unicode(session.id), max_age=99999999)
+            response.set_cookie("session_token", session.token, max_age=99999999)
+            return response
         except:
             # Let werkzeug handle the exception
             if debug:
